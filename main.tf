@@ -48,3 +48,14 @@ resource "kubernetes_service" "flask_app_service" {
     }
   }
 }
+# Cleanup resources
+
+resource "null_resource" "cleanup" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+
+  provisioner "local-exec" {
+    command = "terraform destroy -auto-approve"
+  }
+}

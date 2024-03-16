@@ -22,7 +22,7 @@ resource "kubernetes_deployment" "flask_app" {
       spec {
         container {
           name  = "flask-app"
-          image = "flask-app"
+          image = "registry.gitlab.com/ompatel4799/my_project:$CI_COMMIT_SHORT_SHA"
           ports {
             container_port = 5000
           }

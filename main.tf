@@ -1,68 +1,50 @@
-# Define provider and authenticate with GCP
-provider "google" {
-  credentials = file("key.json")
-  project     = "your-project-id"
-  region      = "us-central1"
-}
+resource "kubernetes_deployment" "flask_app" {
+  metadata {
+    name = "flask-app"
+  }
 
-# Define variables
-variable "instance_type" {
-  description = "Machine type for the instances"
-  default     = "f1-micro"
-}
+  spec {
+    replicas = 3
 
-variable "master_name" {
-  description = "Name for the K3s master node"
-  default     = "k3s-master"
-}
+    selector {
+      match_labels = {
+        app = "flask-app"
+      }
+    }
 
-variable "worker_name" {
-  description = "Name for the K3s worker node"
-  default     = "k3s-worker"
-}
+    template {
+      metadata {
+        labels = {
+          app = "flask-app"
+        }
+      }
 
-# Create network
-resource "google_compute_network" "network" {
-  name = "k3s-network"
-}
-
-# Create firewall rule to allow ingress traffic
-resource "google_compute_firewall" "firewall" {
-  name    = "k3s-firewall"
-  network = google_compute_network.network.name
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22", "6443", "10250-10255"]
+      spec {
+        container {
+          name  = "flask-app"
+          image = "flask-app"
+          ports {
+            container_port = 5000
+          }
+        }
+      }
+    }
   }
 }
 
-# Create master instance
-resource "google_compute_instance" "master" {
-  name         = var.master_name
-  machine_type = var.instance_type
-  zone         = "us-central1-a"
-  network_interface {
-    network = google_compute_network.network.name
+resource "kubernetes_service" "flask_app_service" {
+  metadata {
+    name = "flask-app-service"
   }
 
-  metadata_startup_script = <<-EOF
-    #!/bin/bash
-    curl -sfL https://get.k3s.io | K3S_URL="https://server-ip:6443" K3S_TOKEN="your-token" sh -
-  EOF
-}
+  spec {
+    selector = {
+      app = "flask-app"
+    }
 
-# Create worker instance
-resource "google_compute_instance" "worker" {
-  name         = var.worker_name
-  machine_type = var.instance_type
-  zone         = "us-central1-a"
-  network_interface {
-    network = google_compute_network.network.name
+    port {
+      port        = 80
+      target_port = 5000
+    }
   }
-
-  metadata_startup_script = <<-EOF
-    #!/bin/bash
-    curl -sfL https://get.k3s.io | K3S_URL="https://server-ip:6443" K3S_TOKEN="your-token" sh -
-  EOF
 }

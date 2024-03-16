@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template
 from google.cloud import storage
+import pyclamd
 
 app = Flask(__name__)
 
@@ -8,6 +9,9 @@ client = storage.Client()
 
 # Get the GCS bucket
 bucket = client.get_bucket('projectdbms')
+
+# Initialize ClamAV scanner
+clamav = pyclamd.ClamdUnixSocket()
 
 @app.route('/')
 def upload():
@@ -18,6 +22,13 @@ def success():
     if request.method == 'POST':
         # Get the uploaded file
         f = request.files['file']
+
+        # Perform ClamAV scan
+        virus_scan_result = clamav.scan_stream(f.stream)
+
+        # Check if virus was found
+        if virus_scan_result:
+            return "Virus detected in the file. File not uploaded."
 
         # Create a blob object in the GCS bucket
         blob = bucket.blob(f.filename)

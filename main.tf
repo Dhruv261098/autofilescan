@@ -48,7 +48,7 @@ resource "kubernetes_service" "flask_app_service" {
     }
   }
 }
-# Cleanup resources
+# Cleanup  resources
 
 resource "null_resource" "cleanup" {
   triggers = {
